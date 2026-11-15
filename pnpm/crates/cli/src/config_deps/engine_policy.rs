@@ -112,7 +112,12 @@ pub(super) fn engine_resolve_options(
             published_by_exclude,
             trust_policy,
             trust_policy_exclude,
-            trust_policy_ignore_after: config.trust_policy_ignore_after,
+            trust_policy_ignore_after: config.trust_policy_ignore_after.map(|minutes| {
+                pnpm_resolving_resolver_base::TrustIgnoreAfter {
+                    minutes,
+                    now: config.minimum_release_age_now,
+                }
+            }),
             ..Default::default()
         },
         ..ResolveOptions::default()
@@ -129,7 +134,8 @@ fn engine_release_cutoff(config: &Config) -> Result<Option<chrono::DateTime<chro
             let duration = chrono::Duration::try_minutes(minutes)
                 .ok_or_else(|| miette::miette!("minimumReleaseAge is too large"))?;
             Some(
-                chrono::Utc::now()
+                config
+                    .release_age_now()
                     .checked_sub_signed(duration)
                     .ok_or_else(|| miette::miette!("minimumReleaseAge cutoff is out of range"))?,
             )

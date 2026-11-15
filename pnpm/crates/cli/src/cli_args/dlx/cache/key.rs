@@ -1,4 +1,5 @@
 use crate::cli_args::add::AllowBuildSelector;
+use chrono::{DateTime, SecondsFormat, Utc};
 use indexmap::IndexMap;
 use pnpm_config::{Config, PackageExtension, TrustPolicy};
 use pnpm_crypto_hash::create_short_hash;
@@ -28,6 +29,8 @@ pub(in crate::cli_args::dlx) struct CachePolicyInputs<'a> {
     pub trust_policy: Option<TrustPolicyInput<'a>>,
     pub trust_lockfile: bool,
     pub block_exotic_subdeps: bool,
+    /// `minimumReleaseAgeNow`, when an age or trust window counts back from it.
+    pub release_age_now: Option<DateTime<Utc>>,
 }
 
 impl Default for CachePolicyInputs<'_> {
@@ -39,12 +42,13 @@ impl Default for CachePolicyInputs<'_> {
             trust_policy: None,
             trust_lockfile: false,
             block_exotic_subdeps: true,
+            release_age_now: None,
         }
     }
 }
 
 impl<'a> CachePolicyInputs<'a> {
-    pub(super) fn from_config(config: &'a Config) -> Self {
+    pub(in crate::cli_args::dlx) fn from_config(config: &'a Config) -> Self {
         let overrides = config.overrides
             .as_ref()
             .filter(|overrides| !overrides.is_empty());
@@ -77,6 +81,9 @@ impl<'a> CachePolicyInputs<'a> {
             trust_policy,
             trust_lockfile: config.trust_lockfile,
             block_exotic_subdeps: config.block_exotic_subdeps,
+            release_age_now: config.minimum_release_age_now.filter(|_| {
+                config.release_age_now_applies()
+            }),
         }
     }
 }
@@ -176,6 +183,11 @@ fn policy_key_inputs(policy: &CachePolicyInputs<'_>) -> Vec<Value> {
     }
     if !policy.block_exotic_subdeps {
         items.push(json!({ "blockExoticSubdeps": false }));
+    }
+    if let Some(now) = policy.release_age_now {
+        items.push(
+            json!({ "minimumReleaseAgeNow": now.to_rfc3339_opts(SecondsFormat::AutoSi, true) }),
+        );
     }
     items
 }

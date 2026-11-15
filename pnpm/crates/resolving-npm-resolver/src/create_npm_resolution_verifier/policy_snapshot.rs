@@ -1,3 +1,5 @@
+use chrono::SecondsFormat;
+
 use super::{
     BTreeMap, DateTime, Digest, HashMap, JsonValue, ReleaseAgeCheck, Sha256, TrustCheck,
     TrustPolicy, Utc, VerificationMetadataClient, VerificationRegistryRoutes,
@@ -80,9 +82,16 @@ pub(super) fn build_policy_snapshot(
     trust: &TrustCheck,
     routing: &VerificationRegistryRoutes,
     metadata: &VerificationMetadataClient,
+    now: Option<DateTime<Utc>>,
 ) -> serde_json::Map<String, JsonValue> {
     let mut map = serde_json::Map::new();
     insert_structural_and_routing_policy(&mut map, routing);
+    if let Some(now) = now {
+        map.insert(
+            CHECK_TIME_KEY.to_string(),
+            JsonValue::String(now.to_rfc3339_opts(SecondsFormat::AutoSi, true)),
+        );
+    }
     map.insert(
         "minimumReleaseAge".to_string(),
         JsonValue::from(release_age.minimum_minutes.unwrap_or(0)),
@@ -111,6 +120,39 @@ pub(super) fn build_policy_snapshot(
         JsonValue::Bool(metadata.ignore_missing_time_field),
     );
     map
+}
+
+/// Policy key for the fixed time a run checked at. Runs that check at the
+/// wall-clock time leave it out.
+const CHECK_TIME_KEY: &str = "minimumReleaseAgeNow";
+
+/// Whether a cached run checked at `now` or earlier. An earlier time gives
+/// an earlier release-age cutoff and a shorter `trustPolicyIgnoreAfter`
+/// window, so that run accepted no version this run rejects. A cached run
+/// with no fixed time checked at its own wall-clock time: earlier than this
+/// run's `checked_at`, and unknown against a fixed `now`.
+pub(super) fn past_check_time_is_not_later(
+    cached_policy: &serde_json::Map<String, JsonValue>,
+    now: Option<DateTime<Utc>>,
+    checked_at: DateTime<Utc>,
+) -> bool {
+    let past = match cached_policy.get(CHECK_TIME_KEY) {
+        None => None,
+        Some(value) => {
+            let Some(time) = value
+                .as_str()
+                .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
+            else {
+                return false;
+            };
+            Some(time.with_timezone(&Utc))
+        }
+    };
+    match (past, now) {
+        (None, None) => true,
+        (None, Some(_)) => false,
+        (Some(past), _) => past <= checked_at,
+    }
 }
 
 /// Checked arithmetic makes an unrepresentable age disable the cutoff rather

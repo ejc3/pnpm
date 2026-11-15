@@ -1601,6 +1601,13 @@ pub struct Config {
     /// [`Self::resolved_minimum_release_age_strict`].
     pub minimum_release_age_strict: Option<bool>,
 
+    /// The time the [`Self::minimum_release_age`] cutoff and the
+    /// [`Self::trust_policy_ignore_after`] window count back from, for
+    /// resolution and lockfile verification alike. Unset counts back from the
+    /// current time; see [`Self::release_age_now`]. The `minimumReleaseAgeNow`
+    /// setting.
+    pub minimum_release_age_now: Option<chrono::DateTime<chrono::Utc>>,
+
     /// Skip the lockfile supply-chain verification pass entirely. When
     /// `true`, the install trusts the lockfile as-is and never calls
     /// `verify_lockfile_resolutions`, even if other policies
@@ -1915,24 +1922,6 @@ impl Config {
         Self::default()
     }
 
-    /// pnpm-managed directories that workspace project discovery must
-    /// never report projects from: the store, cache, and state roots
-    /// plus the install-target directories. Entries may be absolute or
-    /// relative to the workspace root; discovery resolves them the way
-    /// [`pnpm_workspace::find_workspace_inventory`] resolves its
-    /// `ignored_directories`.
-    #[must_use]
-    pub fn managed_directories(&self) -> Vec<PathBuf> {
-        vec![
-            self.store_dir.root().to_path_buf(),
-            self.cache_dir.clone(),
-            self.state_dir.clone(),
-            self.modules_dir.clone(),
-            self.install_state_dir.clone(),
-            self.global_virtual_store_dir.clone(),
-        ]
-    }
-
     /// Persist the config data until the program terminates.
     pub fn leak(self) -> &'static mut Self {
         self.pipe(Box::new).pipe(Box::leak)
@@ -1942,4 +1931,5 @@ impl Config {
 mod cache;
 mod filters;
 mod patches;
+mod release_age_now;
 mod tools;

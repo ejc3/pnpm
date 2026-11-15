@@ -205,6 +205,9 @@ impl WorkspaceSettings {
             minimum_release_age_ignore_missing_time: Some(
                 config.minimum_release_age_ignore_missing_time,
             ),
+            minimum_release_age_now: config.minimum_release_age_now.map(|time| {
+                time.to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true)
+            }),
             minimum_release_age_strict: config.minimum_release_age_strict,
             trust_lockfile: Some(config.trust_lockfile),
             trust_policy: Some(config.trust_policy),

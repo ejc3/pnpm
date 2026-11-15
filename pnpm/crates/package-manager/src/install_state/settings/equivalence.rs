@@ -97,3 +97,23 @@ fn same_file(left: &Path, right: &Path) -> bool {
 fn non_empty(map: Option<&IndexMap<String, String>>) -> Option<&IndexMap<String, String>> {
     map.filter(|map| !map.is_empty())
 }
+
+/// Whether `minimumReleaseAgeNow` moved to a time the recorded install did
+/// not cover. A later time accepts every version the recorded install
+/// accepted, so it needs no new install. An earlier time, a fixed time where
+/// the recorded install used its own unknown clock, or the current time in
+/// place of a recorded time that is still ahead of `now`, can reject some.
+pub(super) fn release_age_now_moved_back(
+    recorded: Option<&str>,
+    live: Option<&str>,
+    now: chrono::DateTime<chrono::Utc>,
+) -> bool {
+    let parse = |value: &str| chrono::DateTime::parse_from_rfc3339(value).ok();
+    match (recorded.map(parse), live.map(parse)) {
+        (None, None) => false,
+        (None, Some(_)) => true,
+        (Some(Some(recorded)), None) => recorded > now,
+        (Some(Some(recorded)), Some(Some(live))) => live < recorded,
+        (Some(None), _) | (_, Some(None)) => true,
+    }
+}

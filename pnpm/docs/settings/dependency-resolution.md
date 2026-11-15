@@ -408,6 +408,21 @@ The setting also governs [`trustPolicy`](#trustpolicy), which reads the same pub
 
 The opt-in covers a registry that cannot date its releases, not a package a registry says it never published: during [lockfile verification](../supply-chain-security.md), a lockfile entry missing from a packument that does date every version it lists remains a hard failure.
 
+### minimumReleaseAgeNow
+
+* Default: **undefined**
+* Type: **String** (an RFC 3339 timestamp)
+
+The time that [`minimumReleaseAge`](#minimumreleaseage) and [`trustPolicyIgnoreAfter`](#trustpolicyignoreafter) count back from. When unset, pnpm uses the current time. A fixed time applies to resolution and to [lockfile verification](../supply-chain-security.md) alike, so a commit that passes the check today also passes it next week. A version published after that time counts as immature until you move the time forward.
+
+Set it in `pnpm-workspace.yaml` or with the `PNPM_CONFIG_MINIMUM_RELEASE_AGE_NOW` environment variable. The global `config.yaml` does not apply it. In `pnpm-workspace.yaml`, a value that is not a timestamp, or is more than 10 minutes later than the current time, fails the command. From any other source, such a value is ignored with a warning. A job that advances the time should write one safely in the past, such as the start of the current day.
+
+While a `minimumReleaseAge` cutoff, or a `trustPolicyIgnoreAfter` window under `trustPolicy: no-downgrade`, counts back from the setting, an install that uses [`pnprServer`](/pnpr/install-acceleration#enabling-it) resolves locally.
+
+```yaml title="pnpm-workspace.yaml"
+minimumReleaseAgeNow: "2026-11-01T00:00:00Z"
+```
+
 ### minimumReleaseAgeStrict
 
 * Default: **true** if [`minimumReleaseAge`](#minimumreleaseage) is explicitly configured, **false** otherwise

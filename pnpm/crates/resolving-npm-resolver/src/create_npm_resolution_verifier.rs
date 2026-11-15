@@ -27,7 +27,9 @@ use registry_routes::VerificationRegistryRoutes;
 mod trust_check;
 
 mod policy_snapshot;
-use policy_snapshot::{build_policy_snapshot, cached_policy_patterns};
+use policy_snapshot::{
+    build_policy_snapshot, cached_policy_patterns, past_check_time_is_not_later,
+};
 
 mod registry_artifact;
 
@@ -130,7 +132,9 @@ pub struct CreateNpmResolutionVerifierOptions {
         Option<std::collections::BTreeMap<String, pnpm_lockfile::RegistryOptions>>,
     /// Override for `Utc::now()` when computing the age cutoff and
     /// the `trustPolicyIgnoreAfter` window. `None` falls back to
-    /// wall-clock at construction time.
+    /// wall-clock at construction time. While the age check or the
+    /// `trustPolicyIgnoreAfter` window is active, a fixed time is recorded in
+    /// the policy snapshot, and a cached run with a later time is not reused.
     pub now: Option<DateTime<Utc>>,
     pub release_age: VerificationReleaseAgeOptions,
     pub trust: VerificationTrustOptions,
@@ -238,6 +242,8 @@ pub struct NpmResolutionVerifier {
 
 struct ReleaseAgeCheck {
     minimum_minutes: Option<u64>,
+    /// The time the cutoff counts back from, captured once at construction.
+    checked_at: DateTime<Utc>,
     cutoff: Option<DateTime<Utc>>,
     exclude: Option<PackageVersionPolicy>,
     /// Saved copy of the trust-exclude patterns so [`TrustCheckOptions`]
@@ -269,6 +275,12 @@ impl std::fmt::Debug for NpmResolutionVerifier {
     }
 }
 
+/// Whether the time a run checks at changes its verdict: the age check or
+/// the `trustPolicyIgnoreAfter` window counts back from it.
+fn check_time_matters(release_age: &ReleaseAgeCheck, trust: &TrustCheck) -> bool {
+    release_age.age_check_active() || trust.ignore_after.is_some()
+}
+
 /// Builds the [`NpmResolutionVerifier`]. It always requires a tarball
 /// hash and binds each entry's recorded tarball URL to the artifact the
 /// registry's metadata lists (anti-tamper checks independent of any
@@ -285,7 +297,9 @@ pub fn create_npm_resolution_verifier(
         opts.registries_by_prefix,
         opts.registry_options_by_url,
     );
-    let policy_snapshot = build_policy_snapshot(&release_age, &trust, &routing, &opts.metadata);
+    let check_time = opts.now.filter(|_| check_time_matters(&release_age, &trust));
+    let policy_snapshot =
+        build_policy_snapshot(&release_age, &trust, &routing, &opts.metadata, check_time);
     NpmResolutionVerifier {
         now: opts.now,
         policy_snapshot,
@@ -343,6 +357,11 @@ impl ResolutionVerifier for NpmResolutionVerifier {
             .and_then(JsonValue::as_u64)
             .unwrap_or(0);
         if past_min_age < self.release_age.minimum_minutes.unwrap_or(0) {
+            return false;
+        }
+        if check_time_matters(&self.release_age, &self.trust)
+            && !past_check_time_is_not_later(cached_policy, self.now, self.release_age.checked_at)
+        {
             return false;
         }
 

@@ -43,6 +43,9 @@ fn from_resolved_reports_every_setting() {
         init_author_url: Some("https://example.com".to_string()),
         init_license: Some("MIT".to_string()),
         init_version: Some("1.0.0".to_string()),
+        minimum_release_age_now: Some(
+            chrono::DateTime::parse_from_rfc3339("2026-11-14T00:00:00Z").expect("valid").to_utc(),
+        ),
         minimum_release_age_strict: Some(true),
         boot_config: Some(Box::new(crate::BootConfig {
             minimum_release_age: Some(0),

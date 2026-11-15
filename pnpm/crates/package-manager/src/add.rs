@@ -345,9 +345,9 @@ struct AddResolution<'a> {
 }
 
 impl AddResolution<'_> {
-    fn new() -> Self {
+    fn new(config: &Config) -> Self {
         Self {
-            started_at: chrono::Utc::now(),
+            started_at: config.release_age_now(),
             latest_picker: tokio::sync::OnceCell::new(),
             meta_cache: std::sync::Arc::new(InMemoryPackageMetaCache::default()),
             fetch_locker: shared_packument_fetch_locker(),

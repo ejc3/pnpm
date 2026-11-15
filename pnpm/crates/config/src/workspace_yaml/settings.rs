@@ -573,6 +573,10 @@ pub struct WorkspaceSettings {
     /// `minimumReleaseAgeStrict` from `pnpm-workspace.yaml`.
     pub minimum_release_age_strict: Option<bool>,
 
+    /// `minimumReleaseAgeNow` from `pnpm-workspace.yaml`. See
+    /// [`Config::minimum_release_age_now`](crate::settings::Config::minimum_release_age_now).
+    pub minimum_release_age_now: Option<String>,
+
     /// `trustLockfile` from `pnpm-workspace.yaml`. When `true`, the
     /// install skips the supply-chain verification pass entirely
     /// (see [`Config::trust_lockfile`]).
@@ -822,6 +826,7 @@ impl WorkspaceSettings {
                 source,
             })?;
         settings.validate_all_sections()?;
+        settings.validate_minimum_release_age_now()?;
         settings.reject_repo_controlled_trust_material(path)?;
         Ok(settings)
     }

@@ -1,3 +1,5 @@
+use chrono::{DateTime, Duration, Utc};
+
 use super::{
     IgnoredAny, IndexMap, LoadWorkspaceYamlError, NAMED_UNRECOGNIZED_SETTINGS, Path,
     RemoteSideEffectsCacheSettings, SCHEMA_DIRECTIVE_KEY, SentinelPlaceholders,
@@ -39,6 +41,20 @@ impl WorkspaceSettings {
     pub(super) fn validate_registries(&self) -> Result<(), LoadWorkspaceYamlError> {
         let Some(entries) = self.registries.as_ref() else { return Ok(()) };
         registries::validate(entries)
+    }
+
+    /// `minimumReleaseAgeNow` must be an RFC 3339 timestamp no later than the
+    /// current time: a later one would waive the release-age cutoff. Checked
+    /// for a project `pnpm-workspace.yaml` only, since the global
+    /// `config.yaml` drops the setting.
+    pub(super) fn validate_minimum_release_age_now(&self) -> Result<(), LoadWorkspaceYamlError> {
+        let Some(value) = self.minimum_release_age_now.as_deref() else { return Ok(()) };
+        parse_minimum_release_age_now(value)
+            .map(|_| ())
+            .map_err(|reason| LoadWorkspaceYamlError::InvalidMinimumReleaseAgeNow {
+                value: value.to_string(),
+                reason,
+            })
     }
 
     /// The `tasks` section feeds the task-graph builder of `pnpm -r run`,
@@ -359,4 +375,21 @@ fn parse_present_top_level_keys(text: &str) -> Option<Vec<String>> {
         }
     }
     Some(keys)
+}
+
+/// How far ahead of this machine's clock a `minimumReleaseAgeNow` may be, so
+/// a value another machine wrote from its own clock still loads here.
+const CLOCK_SKEW_ALLOWANCE: Duration = Duration::minutes(10);
+
+/// Parse a `minimumReleaseAgeNow` value: an RFC 3339 timestamp no later than
+/// the current time, give or take [`CLOCK_SKEW_ALLOWANCE`]. The error is the
+/// reason, worded to follow the value.
+pub(super) fn parse_minimum_release_age_now(value: &str) -> Result<DateTime<Utc>, &'static str> {
+    let time = DateTime::parse_from_rfc3339(value)
+        .map_err(|_| "is not an RFC 3339 timestamp")?
+        .with_timezone(&Utc);
+    if time > Utc::now() + CLOCK_SKEW_ALLOWANCE {
+        return Err("is later than the current time");
+    }
+    Ok(time)
 }

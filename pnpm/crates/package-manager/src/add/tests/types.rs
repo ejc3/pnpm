@@ -60,7 +60,8 @@ fn runtime_and_companion_policies_share_the_add_release_age_cutoff() {
     let (mut add, owned) = test_add(config, &http_client, &names, None);
     add.save_types = true;
     let started_at = chrono::DateTime::parse_from_rfc3339("2026-01-01T12:00:00Z").unwrap().to_utc();
-    let resolution = crate::add::AddResolution { started_at, ..crate::add::AddResolution::new() };
+    let resolution =
+        crate::add::AddResolution { started_at, ..crate::add::AddResolution::new(config) };
     let inputs = crate::add::AddResolveInputs {
         add,
         owned: &owned,

@@ -121,6 +121,8 @@ define_workspace_only_groups! {
         update_config,
         peer_dependency_rules,
         minimum_release_age_exclude_prune,
+        // A fixed check time describes one repository's lockfile.
+        minimum_release_age_now,
         trust_policy_exclude_prune,
         audit,
         audit_level,
@@ -167,6 +169,7 @@ impl WorkspaceSettings {
         self.minimum_release_age_exclude = None;
         self.minimum_release_age_ignore_missing_time = None;
         self.minimum_release_age_strict = None;
+        self.minimum_release_age_now = None;
         self.trust_policy = None;
         self.trust_policy_exclude = None;
         self.trust_policy_ignore_after = None;

@@ -47,8 +47,8 @@ pub use resolve::{
     PkgResolutionId, ResolutionPolicyOptions, ResolutionRefreshOptions, ResolveError,
     ResolveFuture, ResolveLatestFuture, ResolveOptions, ResolveResult, ResolvedPackageInfo,
     Resolver, ResolverProjectOptions, ResolverSpecifierOptions, SharedDependencyManifest,
-    UpdateBehavior, VersionSelectionOptions, WantedDependency, WorkspacePackage, WorkspacePackages,
-    WorkspacePackagesByVersion, resolve_package_version,
+    TrustIgnoreAfter, UpdateBehavior, VersionSelectionOptions, WantedDependency, WorkspacePackage,
+    WorkspacePackages, WorkspacePackagesByVersion, lag_minutes, resolve_package_version,
 };
 pub use unsupported_protocol::UnsupportedProtocolError;
 pub use verifier::{

@@ -184,6 +184,7 @@ const CLASSIFICATION: &[(&str, Reach)] = &[
     ("minimum_release_age_exclude", Recorded { key: "minimumReleaseAgeExclude", change: |config| config.minimum_release_age_exclude = Some(vec!["foo".into()]) }),
     ("minimum_release_age_exclude_prune", NotAnInput("prunes exclude entries from the workspace manifest")),
     ("minimum_release_age_ignore_missing_time", Recorded { key: "minimumReleaseAgeIgnoreMissingTime", change: |config| config.minimum_release_age_ignore_missing_time = !config.minimum_release_age_ignore_missing_time }),
+    ("minimum_release_age_now", Recorded { key: "minimumReleaseAgeNow", change: |config| config.minimum_release_age_now = Some(chrono::DateTime::UNIX_EPOCH) }),
     ("minimum_release_age_strict", Recorded { key: "minimumReleaseAgeStrict", change: |config| config.minimum_release_age_strict = Some(false) }),
     ("modules_cache_max_age", NotAnInput("when orphans are pruned, not what is installed")),
     ("modules_dir", Through("the modules directory the workspace state is read from")),

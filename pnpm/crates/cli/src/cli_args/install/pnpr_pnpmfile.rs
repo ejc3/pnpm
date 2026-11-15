@@ -58,6 +58,13 @@ pub(crate) async fn pnpr_target<'a, Reporter: self::Reporter>(
     let Some(server) = state.config.pnpr_server.as_deref() else {
         return Ok(None);
     };
+    if state.config.release_age_now_applies() {
+        let server = redact_url_for_display(server);
+        pnpm_reporter::emit_global_warning::<Reporter>(&format!(
+            "Resolving dependencies locally because the pnpr server at {server} does not support minimumReleaseAgeNow",
+        ));
+        return Ok(None);
+    }
     let pnpmfile_hook = load_pnpmfile(state, pnpr_lockfile_dir(state, link))?;
     if let Some(hook) = pnpmfile_hook.as_ref()
         && let Some(unsupported) = resolution_hook(hook.as_ref()).await?
@@ -74,7 +81,7 @@ pub(crate) async fn pnpr_target<'a, Reporter: self::Reporter>(
 /// Side-effect-free counterpart to [`pnpr_target`] for pre-clean validation,
 /// avoiding a duplicate fallback warning when the install later runs locally.
 pub(crate) async fn uses_pnpr_server(state: &State, link: &PnprLink<'_>) -> miette::Result<bool> {
-    if state.config.pnpr_server.is_none() {
+    if state.config.pnpr_server.is_none() || state.config.release_age_now_applies() {
         return Ok(false);
     }
     let pnpmfile_hook = load_pnpmfile(state, pnpr_lockfile_dir(state, link))?;

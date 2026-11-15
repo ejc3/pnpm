@@ -382,6 +382,18 @@ impl WorkspaceSettings {
             &mut config.minimum_release_age_strict,
             self.minimum_release_age_strict.take(),
         );
+        // A `pnpm-workspace.yaml` value was validated on load. A value from
+        // another source (`PNPM_CONFIG_*`, `--config.*`, a hook) is ignored
+        // with a warning, as other typed settings from those sources are.
+        if let Some(value) = self.minimum_release_age_now.take() {
+            match super::validation::parse_minimum_release_age_now(&value) {
+                Ok(time) => config.minimum_release_age_now = Some(time),
+                Err(reason) => tracing::warn!(
+                    target: "pacquet::config",
+                    "Ignoring minimumReleaseAgeNow: {value:?} {reason}",
+                ),
+            }
+        }
         overlay(&mut config.trust_lockfile, self.trust_lockfile.take());
         overlay(&mut config.trust_policy, self.trust_policy.take());
         overlay_some(&mut config.pm_on_fail, self.pm_on_fail.take());

@@ -70,8 +70,13 @@ impl NpmResolutionVerifier {
             return Some(ResolutionVerification::Err {
                 code: MINIMUM_RELEASE_AGE_VIOLATION_CODE,
                 reason: format!(
-                    "was published at {published}, within the minimumReleaseAge cutoff ({cutoff})",
+                    "was published at {published}, within the minimumReleaseAge cutoff ({cutoff}{counted_from})",
                     cutoff = cutoff.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                    counted_from = if self.now.is_some() {
+                        ", counted back from minimumReleaseAgeNow"
+                    } else {
+                        ""
+                    },
                 ),
             });
         }
@@ -276,10 +281,12 @@ impl super::ReleaseAgeCheck {
         opts: super::VerificationReleaseAgeOptions,
         now: Option<DateTime<Utc>>,
     ) -> Self {
-        let cutoff = super::policy_snapshot::minimum_release_age_cutoff(&opts, now);
+        let checked_at = now.unwrap_or_else(Utc::now);
+        let cutoff = super::policy_snapshot::minimum_release_age_cutoff(&opts, Some(checked_at));
         let sorted_excludes = super::policy_snapshot::sorted_unique(&opts.exclude_patterns);
         Self {
             minimum_minutes: opts.minimum_minutes,
+            checked_at,
             cutoff,
             exclude: opts.exclude,
             sorted_excludes,

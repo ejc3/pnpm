@@ -93,7 +93,7 @@ pub fn build_resolution_verifiers(
         registries,
         registries_by_prefix,
         registry_options_by_url: Some(config.registry_options_by_url.clone()),
-        now: None,
+        now: config.minimum_release_age_now,
         release_age: pnpm_resolving_npm_resolver::VerificationReleaseAgeOptions {
             minimum_minutes: config.resolved_minimum_release_age(),
             exclude: min_age_exclude,

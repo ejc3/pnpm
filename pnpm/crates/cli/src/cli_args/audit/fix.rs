@@ -118,6 +118,7 @@ pub(crate) async fn fix_override(
             &pruned_advisories,
             publish_infos,
             minimum_release_age,
+            config.release_age_now(),
         )?;
         if !added.is_empty() {
             write_age_excludes(settings_dir, &added)?;
@@ -256,13 +257,14 @@ fn resolve_minimum_release_age_excludes(
     advisories: &BTreeMap<String, AuditAdvisory>,
     publish_infos: &HashMap<String, Option<PackumentPublishInfo>>,
     minimum_release_age: u64,
+    now: chrono::DateTime<Utc>,
 ) -> miette::Result<Vec<String>> {
     // On overflow leave the cutoff uncomputable, as `PickPolicy::from_config`
     // does; with no effective gate no bypass entries are needed.
     let Some(cutoff) = i64::try_from(minimum_release_age)
         .ok()
         .and_then(chrono::Duration::try_minutes)
-        .and_then(|age| Utc::now().checked_sub_signed(age))
+        .and_then(|age| now.checked_sub_signed(age))
     else {
         return Ok(Vec::new());
     };

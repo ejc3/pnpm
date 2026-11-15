@@ -104,6 +104,9 @@ pub enum LoadWorkspaceYamlError {
     #[display("The Python package pattern {pattern:?} is routed to two registries: {registries}")]
     #[diagnostic(code(ERR_PNPM_INVALID_SETTING))]
     PythonPackageRoutedTwice { pattern: String, registries: String },
+    #[display("Invalid value of minimumReleaseAgeNow: {value:?} {reason}")]
+    #[diagnostic(code(ERR_PNPM_INVALID_MINIMUM_RELEASE_AGE_NOW))]
+    InvalidMinimumReleaseAgeNow { value: String, reason: &'static str },
     #[display("The \"pipelines['{pipeline}']\" setting contains an entry with no task name")]
     #[diagnostic(code(ERR_PNPM_INVALID_SETTING))]
     EmptyPipelineTaskName { pipeline: String },

@@ -5034,6 +5034,7 @@ name = "pnpm-config"
 version = "0.0.1"
 dependencies = [
  "base64 0.23.1",
+ "chrono",
  "derive_more",
  "dunce",
  "home",

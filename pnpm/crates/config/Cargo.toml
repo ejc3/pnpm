@@ -33,6 +33,7 @@ pnpm-workspace-state = { workspace = true }
 pnpm-workspace-task-scheduler = { workspace = true }
 
 base64 = { workspace = true }
+chrono = { workspace = true }
 derive_more = { workspace = true }
 indexmap = { workspace = true }
 miette = { workspace = true }

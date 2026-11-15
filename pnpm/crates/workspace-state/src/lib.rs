@@ -334,6 +334,10 @@ pub struct WorkspaceStateSettings {
     /// the recorded value is that resolved form, not the raw setting.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_release_age_strict: Option<bool>,
+    /// `minimumReleaseAgeNow`, the fixed time lockfile verification checks
+    /// at. pnpm v11 has no such setting.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_release_age_now: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub node_linker: Option<NodeLinker>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
